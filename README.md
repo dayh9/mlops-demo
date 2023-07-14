@@ -65,3 +65,11 @@ Switching between dataset versions involves a combination of `git checkout` and 
 git checkout tags/v1 
 dvc checkout
 ```
+
+## Order of python scripts to mimic pipeline flow
+1. Split data and save to separate files
+`python src/data/split_data.py --input_dir data --output_dir temp --file "heart.csv" --label HeartDisease`
+2. Transform train data, save x_train, y_train and scaler
+`python src/features/preprocess_heart.py --input_dir temp  --output_dir temp --file train_heart.csv --models_dir models`
+3. Transform test data using saved scaler and save x_test, y_test
+`python src/features/preprocess_heart.py --input_dir temp  --output_dir temp --file test_heart.csv --models_dir models --scaler_file models/heart_scaler.pkl`
