@@ -56,7 +56,11 @@ def get_transformed_data(df, scaler=None):
     
     logger.info(f"Transforming features to scale")
     logger.debug(f"features to scale: {features_to_std}")
-    scaled_set, fitted_scaler = scale_features(df[features_to_std], scaler, fit=True)
+    fit = False
+    if not scaler:
+        scaler = StandardScaler()
+        fit = True
+    scaled_set, fitted_scaler = scale_features(df[features_to_std], scaler, fit)
 
     logger.info(f"Transforming features to bool")
     logger.debug(f"features to bool: {list(features_to_bool)}")
@@ -67,17 +71,17 @@ def get_transformed_data(df, scaler=None):
     vectors_set = make_features_vectors(df[features_to_vector])
 
     features = pd.concat([scaled_set, bool_set, vectors_set], axis=1)
-# 
-    # if "HeartDisease" in df.columns:
-    #     labels = df["HeartDisease"]
-    # else:
-    #     labels = pd.DataFrame(None)
-    # return features, labels, fitted_scaler
+
+    if "HeartDisease" in df.columns:
+        labels = df["HeartDisease"]
+    else:
+        labels = pd.DataFrame(None)
+    return features, labels, fitted_scaler
 
 
 # TODO: make reading params from config file
-def transform_and_save_data(data_folder, input_file, models_folder=None, scaler_file=None):
-    file_path = os.path.join(data_folder, input_file)
+def transform_and_save_data(input_dir, output_dir, data_file, models_folder=None, scaler_file=None):
+    file_path = os.path.join(input_dir, data_file)
     # read csv
     logger.info(f"Loading {file_path}")
     df = pd.read_csv(file_path)
@@ -91,24 +95,26 @@ def transform_and_save_data(data_folder, input_file, models_folder=None, scaler_
     x, y, fitted_scaler = get_transformed_data(df, scaler)
 
     if scaler_file is None:
-        logger.info(f"Saving scaler in {models_folder} fitted on features from {input_file}")
+        logger.info(f"Saving scaler in {models_folder} fitted on features from {data_file}")
         if models_folder is None:
             raise Exception("Provide models_folder to specify where to save scalar")
-        scalar_path = os.path.join(models_folder, "scaler.pkl")
+        scalar_path = os.path.join(models_folder, "heart_scaler.pkl")
         dump(fitted_scaler, open(scalar_path, "wb"))
 
-    logger.info(f"Saving transformed features and labels of {input_file} file in {data_folder} folder")
-    x.to_csv(f"{data_folder}/x_{input_file}", index=False)
-    y.to_csv(f"{data_folder}/y_{input_file}", index=False)
+    logger.info(f"Saving transformed features and labels of {data_file} file in {output_dir} folder")
+    x.to_csv(f"{output_dir}/x_{data_file}", index=False)
+    y.to_csv(f"{output_dir}/y_{data_file}", index=False)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Aggregate data")
-    parser.add_argument("-d", "--data_folder", type=str, help="Folder path to store data")
-    parser.add_argument("-f", "--input_file", type=str, help="Input file to load")
-    parser.add_argument("-m", "--models_folder", type=str, help="Folder path to store models and other artifacts")
+    parser.add_argument("-i", "--input_dir", type=str, help="Directory with input file", required=True)
+    parser.add_argument("-o", "--output_dir", type=str, help="Directory to output split files", required=True)
+    parser.add_argument("-f", "--file", type=str, help="Input file to load")
+    parser.add_argument("-m", "--models_dir", type=str, help="Folder path to store scaler and other artifacts")
     parser.add_argument("-s", "--scaler_file", type=str, help="Scaler file to load")
  
     args = parser.parse_args()
     logger.debug(f"Args: {args}")
-    transform_and_save_data(args.data_folder, args.input_file, args.models_folder, args.scaler_file)
+    # TODO change to args
+    transform_and_save_data(args.input_dir, args.output_dir, args.file, args.models_dir, args.scaler_file)
