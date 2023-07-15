@@ -19,3 +19,7 @@ sort-imports:
 format-python: 
 	@$(USE_VENV)
 	black src
+
+.PHONY: remove-temp
+remove-temp:
+	rm -rf temp
