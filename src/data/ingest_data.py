@@ -1,21 +1,14 @@
-import argparse
+import sys
+
 import pandas as pd
-import os
-from pathlib import Path
-import logging
 
-logger = logging.getLogger(__name__)
+sys.path.append("src")
+from common.logger import get_logger
 
-
-def get_data(input_file: str) -> pd.DataFrame:
-    logger.info(f"Loading {input_file}")
-    df = pd.read_csv(input_file)
-    return df
+logger = get_logger(__name__)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Aggregate data')
-    parser.add_argument('--input_file', type=str, help='Input file')
-
-    args = parser.parse_args()
-    get_data(args.input_folder)
+def get_data(data_file: str) -> pd.DataFrame:
+    logger.info(f"Loading data_file: {data_file}")
+    data = pd.read_csv(data_file)
+    return data

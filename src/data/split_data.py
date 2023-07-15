@@ -21,7 +21,7 @@ def split_and_save_data(
     random_state: int = None,
 ) -> None:
     file_path = os.path.join(input_dir, file)
-    logger.info(f"Loading {file_path}")
+    logger.info(f"Loading data from {file_path}")
     data = pd.read_csv(file_path)
 
     logger.info(f"Splitting {file_path}")
