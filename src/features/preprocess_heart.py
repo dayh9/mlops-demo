@@ -124,11 +124,11 @@ def transform_and_save_data(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Aggregate data")
     parser.add_argument(
-        "-i", "--input_dir", type=str, help="Directory with input file", required=True
+        "-i", "--input-dir", type=str, help="Directory with input file", required=True
     )
     parser.add_argument(
         "-o",
-        "--output_dir",
+        "--output-dir",
         type=str,
         help="Directory to output split files",
         required=True,
@@ -136,11 +136,11 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--file", type=str, help="Input file to load")
     parser.add_argument(
         "-m",
-        "--models_dir",
+        "--models-dir",
         type=str,
         help="Folder path to store scaler and other artifacts",
     )
-    parser.add_argument("-s", "--scaler_file", type=str, help="Scaler file to load")
+    parser.add_argument("-s", "--scaler-file", type=str, help="Scaler file to load")
     args = parser.parse_args()
     logger.debug(f"Args: {args}")
 
