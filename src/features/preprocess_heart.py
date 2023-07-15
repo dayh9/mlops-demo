@@ -89,7 +89,7 @@ def get_transformed_data(data: pd.DataFrame, label: str, scaler: StandardScaler 
 
 # TODO: make reading params from config file
 def transform_and_save_data(
-    input_dir, output_dir, data_file, models_dir=None, scaler_file=None
+    input_dir, output_dir, data_file, models_dir, scaler_file=None
 ):
     file_path = os.path.join(input_dir, data_file)
     logger.info(f"Loading data from file: {file_path}")
@@ -97,8 +97,9 @@ def transform_and_save_data(
 
     scaler = None
     if scaler_file:
-        logger.info(f"Loading scaler from file: {scaler_file}")
-        scaler = load(open(scaler_file, "rb"))
+        scaler_path = os.path.join(models_dir, scaler_file)
+        logger.info(f"Loading scaler from file: {scaler_path}")
+        scaler = load(open(scaler_path, "rb"))
 
     transformed_data, fitted_scaler = get_transformed_data(data, scaler)
 
@@ -106,8 +107,6 @@ def transform_and_save_data(
         logger.info(
             f"Saving scaler in {models_dir} fitted on features from {data_file}"
         )
-        if models_dir is None:
-            raise Exception("Provide models_dir to specify where to save scalar")
         if not os.path.exists(models_dir):
             logger.info(f"Creating models_dir: {models_dir}")
             os.makedirs(models_dir)
@@ -139,6 +138,7 @@ if __name__ == "__main__":
         "--models-dir",
         type=str,
         help="Folder path to store scaler and other artifacts",
+        required=True,
     )
     parser.add_argument("-s", "--scaler-file", type=str, help="Scaler file to load")
     args = parser.parse_args()
