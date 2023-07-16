@@ -29,7 +29,9 @@ def get_model():
     return model
 
 
-def separate_features_labels(data: pd.DataFrame, label: str) -> Tuple[pd.DataFrame, pd.Series]:
+def separate_features_labels(
+    data: pd.DataFrame, label: str
+) -> Tuple[pd.DataFrame, pd.Series]:
     try:
         labels = data[label]
         features = data.drop(columns=[label])
@@ -44,8 +46,7 @@ def train_model(
     label: str,
     scaler_file: Optional[str] = None,
     experiment_name: str = DEFAULT_EXPERIMENT,
-) -> Tuple[Any, str]:
-
+) -> Tuple[str, str]:
     start = time.time()
 
     if mlflow.get_experiment_by_name(experiment_name) is None:
@@ -58,11 +59,9 @@ def train_model(
 
     logger.debug(f"Get train data from: {train_file}")
     train = get_data(train_file)
-    logger.debug(train.info())
     x_train, y_train = separate_features_labels(train, label)
     logger.debug(f"Get test data from: {test_file}")
     test = get_data(test_file)
-    logger.debug(test.info())
     x_test, y_test = separate_features_labels(test, label)
 
     logger.info("Start training")
