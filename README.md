@@ -73,3 +73,5 @@ dvc checkout
 `python src/features/preprocess_heart.py --input-dir temp/splitted  --output-dir temp/preprocessed --file train_heart.csv --models-dir models`
 3. Transform test data using saved scaler and save x_test, y_test
 `python src/features/preprocess_heart.py --input-dir temp/splitted  --output-dir temp/preprocessed --file test_heart.csv --models-dir models --scaler-file heart_scaler.pkl`
+4. Train model
+`python src/models/train_heart.py --train-file temp/preprocessed/train_heart.csv --test-file temp/preprocessed/test_heart.csv --label HeartDisease --scaler-file models/heart_scaler.pkl`

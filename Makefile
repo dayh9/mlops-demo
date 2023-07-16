@@ -20,6 +20,33 @@ format-python:
 	@$(USE_VENV)
 	black src
 
-.PHONY: remove-temp
-remove-temp:
+.PHONY: remove-all
+remove-all:
 	rm -rf temp
+	rm -rf mlruns
+	rm -rf models
+
+.PHONY: split-data
+split-data:
+	@$(USE_VENV)
+	LOG_LEVEL=10 python src/data/split_data.py \
+	--input-dir data --output-dir temp/splitted \
+	--file "heart.csv" --label HeartDisease
+
+.PHONY: preprocess-data
+preprocess-data:
+	@$(USE_VENV)
+	LOG_LEVEL=10 python src/features/preprocess_heart.py \
+	--input-dir temp/splitted  --output-dir temp/preprocessed \
+	--file train_heart.csv --models-dir models
+	LOG_LEVEL=10 python src/features/preprocess_heart.py \
+	--input-dir temp/splitted  --output-dir temp/preprocessed \
+	--file test_heart.csv --models-dir models --scaler-file heart_scaler.pkl
+
+.PHONY: train
+train:
+	@$(USE_VENV)
+	LOG_LEVEL=10 python src/models/train_heart.py \
+	--train-file temp/preprocessed/train_heart.csv \
+	--test-file temp/preprocessed/test_heart.csv \
+	--label HeartDisease --scaler-file models/heart_scaler.pkl
