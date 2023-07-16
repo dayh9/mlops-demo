@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+from typing import Optional
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -18,13 +19,14 @@ def split_and_save_data(
     file: str,
     label: str,
     test_size: float = 0.2,
-    random_state: int = None,
+    random_state: Optional[int] = None,
 ) -> None:
+    logger.info(f"Loading and splitting file: {file}")
     file_path = os.path.join(input_dir, file)
-    logger.info(f"Loading data from {file_path}")
+    logger.debug(f"Loading data from {file_path}")
     data = pd.read_csv(file_path)
 
-    logger.info(f"Splitting {file_path}")
+    logger.debug(f"Splitting {file_path}")
     split_1, split_2 = train_test_split(
         data,
         test_size=test_size,
