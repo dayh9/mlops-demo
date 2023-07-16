@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 import time
-from typing import Tuple
+from typing import Any, Optional, Tuple
 
 import mlflow
 import pandas as pd
@@ -17,9 +17,10 @@ print(sys.path)
 
 from common.logger import get_logger
 from data.ingest_data import get_data
-from features.preprocess_heart import get_transformed_data, split_data
 
 logger = get_logger(__name__)
+
+DEFAULT_EXPERIMENT = "default_experiment"
 
 
 def get_model():
@@ -28,9 +29,12 @@ def get_model():
     return model
 
 
-def separate_features_labels(data: pd.DataFrame, label: str) -> Tuple[pd.DataFrame]:
-    labels = data[label]
-    features = data.drop(columns=[label])
+def separate_features_labels(data: pd.DataFrame, label: str) -> Tuple[pd.DataFrame, pd.Series]:
+    try:
+        labels = data[label]
+        features = data.drop(columns=[label])
+    except KeyError:
+        raise Exception(f"Missing label column: {label}")
     return features, labels
 
 
@@ -38,19 +42,30 @@ def train_model(
     train_file: str,
     test_file: str,
     label: str,
-    scaler_file: str = None,
-    experiment_name: str = "experiment",
-):
+    scaler_file: Optional[str] = None,
+    experiment_name: str = DEFAULT_EXPERIMENT,
+) -> Tuple[Any, str]:
+
     start = time.time()
 
+    if mlflow.get_experiment_by_name(experiment_name) is None:
+        logger.debug(f"Create experiment: {experiment_name}")
+        mlflow.create_experiment(experiment_name, "models")
+
+    logger.debug(f"Set experiment: {experiment_name}")
     mlflow.set_experiment(experiment_name)
     mlflow.autolog()
 
+    logger.debug(f"Get train data from: {train_file}")
     train = get_data(train_file)
+    logger.debug(train.info())
     x_train, y_train = separate_features_labels(train, label)
+    logger.debug(f"Get test data from: {test_file}")
     test = get_data(test_file)
+    logger.debug(test.info())
     x_test, y_test = separate_features_labels(test, label)
 
+    logger.info("Start training")
     with mlflow.start_run() as active_run:
         run_id = active_run.info.run_id
         # add the git commit hash as tag to the experiment run
@@ -84,18 +99,13 @@ def train_model(
     return run_id, model_uri
 
 
-def main(train_file, test_file):
-    print(train_file)
-    print(test_file)
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Aggregate data")
-    parser.add_argument("--train-file", type=str, required=True)
-    parser.add_argument("--test-file", type=str, required=True)
-    parser.add_argument("--label", type=str, required=True)
-    parser.add_argument("--scaler-file", type=str)
-    parser.add_argument("--experiment-name", type=str)
+    parser.add_argument("-t", "--train-file", type=str, required=True)
+    parser.add_argument("-e", "--test-file", type=str, required=True)
+    parser.add_argument("-l", "--label", type=str, required=True)
+    parser.add_argument("-s", "--scaler-file", type=str)
+    parser.add_argument("-n", "--experiment-name", type=str, default=DEFAULT_EXPERIMENT)
     args = parser.parse_args()
 
     train_model(
