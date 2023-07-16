@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 from pickle import dump, load
+from typing import Optional, Tuple
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -13,7 +14,9 @@ from common.logger import get_logger
 logger = get_logger(__name__)
 
 
-def scale_features(data: pd.DataFrame, scaler: StandardScaler, fit: bool):
+def scale_features(
+    data: pd.DataFrame, scaler: StandardScaler, fit: bool
+) -> Tuple[pd.DataFrame, StandardScaler]:
     """Scales dataframe with StandardScaler then returns scaled data and scaler. Optionally can beforehand fit this scaler with data."""
     if fit:
         scaler.fit(data)
@@ -24,15 +27,15 @@ def scale_features(data: pd.DataFrame, scaler: StandardScaler, fit: bool):
     return scaled_set, scaler
 
 
-def make_features_bool(data_set, true_value_map):
+def make_features_bool(data_set: pd.DataFrame, true_value_map: dict) -> pd.DataFrame:
     bool_set = pd.DataFrame()
     for k, v in true_value_map.items():
-        bool_set[f"{k}_{v}"] = data_set[k].replace({v: 1, f"[^{v}]": 0}, regex=True)
+        bool_set[f"{k}_{v}"] = data_set[k].replace({v: 1.0, f"[^{v}]": 0.0}, regex=True)
 
     return bool_set
 
 
-def make_features_vectors(data_set):
+def make_features_vectors(data_set: pd.DataFrame) -> pd.DataFrame:
     vectors_sets = []
     for column in data_set.columns:
         vectors_sets.append(
@@ -42,7 +45,12 @@ def make_features_vectors(data_set):
     return pd.concat(vectors_sets, axis=1)
 
 
-def split_data(data_set, class_column, split=0.2, random_state=None):
+def split_data(
+    data_set: pd.DataFrame,
+    class_column: str,
+    split: float = 0.2,
+    random_state: Optional[int] = None,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     split_1, split_2 = train_test_split(
         data_set,
         test_size=split,
@@ -53,13 +61,14 @@ def split_data(data_set, class_column, split=0.2, random_state=None):
     return split_1, split_2
 
 
-def get_transformed_data(data: pd.DataFrame, label: str, scaler: StandardScaler = None):
-    logger.debug(f"get_transformed_data args: {data.columns=} {scaler=}")
-
+def get_transformed_data(
+    data: pd.DataFrame, scaler: StandardScaler = None
+) -> Tuple[pd.DataFrame, StandardScaler]:
     # TODO: pass features in config
     features_to_std = ["Age", "RestingBP", "Cholesterol", "MaxHR", "Oldpeak"]
     features_to_bool = {"Sex": "F", "ExerciseAngina": "Y"}
     features_to_vector = ["ChestPainType", "RestingECG", "ST_Slope"]
+    label = "HeartDisease"
 
     logger.info(f"Transforming features to scale")
     logger.debug(f"features to scale: {features_to_std}")
@@ -80,17 +89,22 @@ def get_transformed_data(data: pd.DataFrame, label: str, scaler: StandardScaler 
     if label in data.columns:
         labels = data[label]
     else:
-        labels = pd.DataFrame(None)
+        labels = pd.Series(None)
 
     transformed_data = pd.concat([scaled_set, bool_set, vectors_set, labels], axis=1)
+    logger.debug(f"{transformed_data.columns=}")
 
     return transformed_data, fitted_scaler
 
 
 # TODO: make reading params from config file
 def transform_and_save_data(
-    input_dir, output_dir, data_file, models_dir, scaler_file=None
-):
+    input_dir: str,
+    output_dir: str,
+    data_file: str,
+    models_dir: str,
+    scaler_file: Optional[StandardScaler] = None,
+) -> None:
     file_path = os.path.join(input_dir, data_file)
     logger.info(f"Loading data from file: {file_path}")
     data = pd.read_csv(file_path)
