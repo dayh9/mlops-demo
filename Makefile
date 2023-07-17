@@ -31,17 +31,17 @@ split-data:
 	@$(USE_VENV)
 	python src/data/split_data.py \
 	--input-dir data --output-dir temp/splitted \
-	--file "heart.csv" --label HeartDisease
+	--data-file "heart.csv" --label HeartDisease
 
 .PHONY: preprocess-data
 preprocess-data:
 	@$(USE_VENV)
 	python src/features/preprocess_heart.py \
 	--input-dir temp/splitted  --output-dir temp/preprocessed \
-	--file train_heart.csv --models-dir models
+	--data-file train_heart.csv --models-dir models
 	python src/features/preprocess_heart.py \
 	--input-dir temp/splitted  --output-dir temp/preprocessed \
-	--file test_heart.csv --models-dir models --scaler-file heart_scaler.pkl
+	--data-file test_heart.csv --models-dir models --scaler-file heart_scaler.pkl
 
 .PHONY: train
 train:

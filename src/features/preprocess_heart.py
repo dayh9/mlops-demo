@@ -18,6 +18,7 @@ def scale_features(
     data: pd.DataFrame, scaler: StandardScaler, fit: bool
 ) -> Tuple[pd.DataFrame, StandardScaler]:
     """Scales dataframe with StandardScaler then returns scaled data and scaler. Optionally can beforehand fit this scaler with data."""
+    logger.info(f"Transforming features to scale")
     if fit:
         scaler.fit(data)
 
@@ -28,6 +29,7 @@ def scale_features(
 
 
 def make_features_bool(data_set: pd.DataFrame, true_value_map: dict) -> pd.DataFrame:
+    logger.info(f"Transforming features to bool")
     bool_set = pd.DataFrame()
     for k, v in true_value_map.items():
         bool_set[f"{k}_{v}"] = data_set[k].replace({v: 1.0, f"[^{v}]": 0.0}, regex=True)
@@ -36,6 +38,7 @@ def make_features_bool(data_set: pd.DataFrame, true_value_map: dict) -> pd.DataF
 
 
 def make_features_vectors(data_set: pd.DataFrame) -> pd.DataFrame:
+    logger.info(f"Transforming features to vectors")
     vectors_sets = []
     for column in data_set.columns:
         vectors_sets.append(
@@ -45,24 +48,8 @@ def make_features_vectors(data_set: pd.DataFrame) -> pd.DataFrame:
     return pd.concat(vectors_sets, axis=1)
 
 
-def split_data(
-    data_set: pd.DataFrame,
-    class_column: str,
-    split: float = 0.2,
-    random_state: Optional[int] = None,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    split_1, split_2 = train_test_split(
-        data_set,
-        test_size=split,
-        random_state=random_state,
-        stratify=data_set[class_column],
-        shuffle=True,
-    )
-    return split_1, split_2
-
-
 def get_transformed_data(
-    data: pd.DataFrame, scaler: StandardScaler = None
+    data: pd.DataFrame, scaler: Optional[StandardScaler] = None
 ) -> Tuple[pd.DataFrame, StandardScaler]:
     # TODO: pass features in config
     features_to_std = ["Age", "RestingBP", "Cholesterol", "MaxHR", "Oldpeak"]
@@ -70,7 +57,6 @@ def get_transformed_data(
     features_to_vector = ["ChestPainType", "RestingECG", "ST_Slope"]
     label = "HeartDisease"
 
-    logger.info(f"Transforming features to scale")
     logger.debug(f"features to scale: {features_to_std}")
     fit = False
     if not scaler:
@@ -78,11 +64,9 @@ def get_transformed_data(
         fit = True
     scaled_set, fitted_scaler = scale_features(data[features_to_std], scaler, fit)
 
-    logger.info(f"Transforming features to bool")
     logger.debug(f"features to bool: {list(features_to_bool)}")
     bool_set = make_features_bool(data[list(features_to_bool)], features_to_bool)
 
-    logger.info(f"Transforming features to vectors")
     logger.debug(f"features to vectors: {features_to_vector}")
     vectors_set = make_features_vectors(data[features_to_vector])
 
@@ -92,7 +76,7 @@ def get_transformed_data(
         labels = pd.Series(None)
 
     transformed_data = pd.concat([scaled_set, bool_set, vectors_set, labels], axis=1)
-    logger.debug(f"{transformed_data.columns=}")
+    logger.debug(f"Transformed data: {transformed_data.columns=}")
 
     return transformed_data, fitted_scaler
 
@@ -105,21 +89,22 @@ def transform_and_save_data(
     models_dir: str,
     scaler_file: Optional[StandardScaler] = None,
 ) -> None:
+    logger.info(f"Transform data from file: {data_file=}")
     file_path = os.path.join(input_dir, data_file)
-    logger.info(f"Loading data from file: {file_path}")
+    logger.debug(f"Loading data file from: {file_path=}")
     data = pd.read_csv(file_path)
 
     scaler = None
     if scaler_file:
         scaler_path = os.path.join(models_dir, scaler_file)
-        logger.info(f"Loading scaler from file: {scaler_path}")
+        logger.info(f"Loading scaler file from: {scaler_path=}")
         scaler = load(open(scaler_path, "rb"))
 
     transformed_data, fitted_scaler = get_transformed_data(data, scaler)
 
     if scaler_file is None:
         logger.info(
-            f"Saving scaler in {models_dir} fitted on features from {data_file}"
+            f"Saving scaler in folder: {models_dir} fitted on features from: {data_file}"
         )
         if not os.path.exists(models_dir):
             logger.info(f"Creating models_dir: {models_dir}")
@@ -127,10 +112,10 @@ def transform_and_save_data(
         scalar_path = os.path.join(models_dir, "heart_scaler.pkl")
         dump(fitted_scaler, open(scalar_path, "wb"))
 
-    logger.info(f"Saving transformed {data_file} file in {output_dir} folder")
     if not os.path.exists(output_dir):
         logger.info(f"Creating output_dir: {output_dir}")
         os.makedirs(output_dir)
+    logger.info(f"Saving transformed {data_file} file in {output_dir} folder")
     transformed_data.to_csv(os.path.join(output_dir, data_file), index=False)
 
 
@@ -146,7 +131,7 @@ if __name__ == "__main__":
         help="Directory to output split files",
         required=True,
     )
-    parser.add_argument("-f", "--file", type=str, help="Input file to load")
+    parser.add_argument("-d", "--data-file", type=str, help="Input file to load")
     parser.add_argument(
         "-m",
         "--models-dir",
@@ -156,8 +141,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("-s", "--scaler-file", type=str, help="Scaler file to load")
     args = parser.parse_args()
-    logger.debug(f"Args: {args}")
 
     transform_and_save_data(
-        args.input_dir, args.output_dir, args.file, args.models_dir, args.scaler_file
+        args.input_dir, args.output_dir, args.data_file, args.models_dir, args.scaler_file
     )
