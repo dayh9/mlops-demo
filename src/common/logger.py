@@ -2,7 +2,7 @@ import logging
 import os
 
 
-def get_logger(name):
+def get_logger(name) -> logging.Logger:
     logger = logging.getLogger(name)
     handler = logging.StreamHandler()
     handler.setFormatter(
@@ -12,7 +12,3 @@ def get_logger(name):
     logger.setLevel(int(level))
     logger.addHandler(handler)
     return logger
-
-
-if __name__ == "__main__":
-    get_logger()
